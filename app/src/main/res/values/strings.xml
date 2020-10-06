@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ShakeLight</string>
+    <string name="set_service">Set Service</string>
+    <string name="infotextAppWontWork">Your device has no flashlight! This App wont work here.</string>
+    <string name="notificationText">ShakeLight Service</string>
+    <string name="light">Light</string>
 </resources>

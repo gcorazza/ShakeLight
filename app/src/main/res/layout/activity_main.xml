@@ -4,9 +4,21 @@
     android:layout_height="match_parent">
 
     <Button
-        android:id="@+id/button"
+        android:id="@+id/setServiceBtn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="setWorker"
-        android:text="Set Work" />
+        android:onClick="setShakeLightService"
+        android:text="@string/set_service" />
+
+    <TextView
+        android:id="@+id/infoField"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Switch
+        android:id="@+id/lightSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/light" />
+
 </LinearLayout>

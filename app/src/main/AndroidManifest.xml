@@ -1,15 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="gian.shakelight">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+    <uses-feature
+        android:name="android.hardware.camera.flash"
+        android:required="true" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
 
-        <activity android:name=".LaunchingActivity"
+        <activity
+            android:name=".LaunchingActivity"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -17,8 +25,10 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".ShakeLightService"
+            android:exported="true"
+            android:process=":ShakeLightServiceProcess" />
     </application>
-
-
 
 </manifest>
