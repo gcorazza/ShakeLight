@@ -11,6 +11,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
@@ -21,13 +22,17 @@ public class ShakeLightService extends Service implements SensorEventListener, R
     static final int NOTIFICATION_ID = 543;
     private NotificationManager mNM;
 
-    private Flashlight flashlight;
+    private FlashlightI flashlight;
     private Thread servicethread;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
+        } else {
+            flashlight = new FlashlightSubM();
+        }
         mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         showNotification();
     }

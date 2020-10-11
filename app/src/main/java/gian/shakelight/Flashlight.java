@@ -6,8 +6,8 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-public class Flashlight {
+@RequiresApi(api = Build.VERSION_CODES.M)
+public class Flashlight implements FlashlightI {
 
     private final CameraManager cameraManager;
     private boolean flashLightStatus;
@@ -17,32 +17,12 @@ public class Flashlight {
     }
 
     public void setLight(boolean on) {
-        if (on) {
-            turnOn();
-        } else {
-            turnOff();
-        }
-    }
-
-    private void turnOn() {
-
-        try {
-            String cameraId = null;
-            cameraId = cameraManager.getCameraIdList()[0];
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                cameraManager.setTorchMode(cameraId, true);
-            }
-            flashLightStatus = true;
-        } catch (CameraAccessException e) {
-        }
-    }
-
-    private void turnOff() {
         try {
             String cameraId = cameraManager.getCameraIdList()[0];
-            cameraManager.setTorchMode(cameraId, false);
-            flashLightStatus = false;
+            cameraManager.setTorchMode(cameraId, on);
+            flashLightStatus = on;
         } catch (CameraAccessException e) {
+            System.err.println(e.getMessage());
         }
     }
 
@@ -51,7 +31,6 @@ public class Flashlight {
     }
 
     public void toggle() {
-        setLight(flashLightStatus);
-        flashLightStatus = !flashLightStatus;
+        setLight(!flashLightStatus);
     }
 }

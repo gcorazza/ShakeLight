@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -22,7 +23,10 @@ import static android.Manifest.permission.CAMERA;
 
 public class LaunchingActivity extends ComponentActivity {
 
-    private Flashlight flashlight;
+    private FlashlightI flashlight;
+
+    public LaunchingActivity() {
+    }
 
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
             this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -31,13 +35,14 @@ public class LaunchingActivity extends ComponentActivity {
                 }
             });
 
-    public LaunchingActivity() {
-    }
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
+        } else {
+            flashlight = new FlashlightSubM();
+        }
         setContentView(R.layout.activity_main);
         TextView infoField = findViewById(R.id.infoField);
         Button setServiceBtn = findViewById(R.id.setServiceBtn);
