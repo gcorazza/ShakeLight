@@ -10,6 +10,13 @@
         android:onClick="setShakeLightService"
         android:text="@string/set_service" />
 
+    <Button
+        android:id="@+id/unsetServiceBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="unsetShakeLightService"
+        android:text="UNSET SERVICE" />
+
     <TextView
         android:id="@+id/infoField"
         android:layout_width="match_parent"

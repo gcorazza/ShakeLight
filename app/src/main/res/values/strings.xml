@@ -4,4 +4,6 @@
     <string name="infotextAppWontWork">Your device has no flashlight! This App wont work here.</string>
     <string name="notificationText">ShakeLight Service</string>
     <string name="light">Light</string>
+    <string name="channel_name">ShakeLightChannel</string>
+    <string name="channel_description">Its a nice Channel. Really nice</string>
 </resources>

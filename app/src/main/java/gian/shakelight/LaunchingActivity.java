@@ -1,6 +1,8 @@
 package gian.shakelight;
 
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,6 +18,7 @@ import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -24,9 +27,8 @@ import static android.Manifest.permission.CAMERA;
 public class LaunchingActivity extends ComponentActivity {
 
     private FlashlightI flashlight;
+    public static final String channelID = "FlashLightChannelID";
 
-    public LaunchingActivity() {
-    }
 
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
             this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -43,6 +45,11 @@ public class LaunchingActivity extends ComponentActivity {
         } else {
             flashlight = new FlashlightSubM();
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createchannel();
+        }
+
         setContentView(R.layout.activity_main);
         TextView infoField = findViewById(R.id.infoField);
         Button setServiceBtn = findViewById(R.id.setServiceBtn);
@@ -82,10 +89,40 @@ public class LaunchingActivity extends ComponentActivity {
     }
 
     public void setShakeLightService(View v) {
-        startService(new Intent(this, ShakeLightService.class));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(new Intent(this, ShakeLightService.class));
+        } else {
+            startService(new Intent(this, ShakeLightService.class));
+        }
+    }
+
+    public void unsetShakeLightService(View v) {
+        stopService(new Intent(getApplicationContext(), ShakeLightService.class));
+    }
+
+
+    /**
+     * for API 26+ create notification channels
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void createchannel() {
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        NotificationChannel mChannel = new NotificationChannel(channelID,
+                getString(R.string.channel_name),  //name of the channel
+                NotificationManager.IMPORTANCE_LOW);   //importance level
+        //important level: default is is high on the phone.  high is urgent on the phone.  low is medium, so none is low?
+        // Configure the notification channel.
+        mChannel.setDescription(getString(R.string.channel_description));
+        mChannel.enableLights(true);
+        // Sets the notification light color for notifications posted to this channel, if the device supports this feature.
+        mChannel.setShowBadge(true);
+        nm.createNotificationChannel(mChannel);
     }
 
 }
 //backlog:
 
 //significant motion?
+
+//https://developer.android.com/about/versions/oreo/background#services
