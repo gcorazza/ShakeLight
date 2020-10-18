@@ -6,4 +6,5 @@
     <string name="light">Light</string>
     <string name="channel_name">ShakeLightChannel</string>
     <string name="channel_description">Its a nice Channel. Really nice</string>
+    <string name="unset_service">UNSET SERVICE</string>
 </resources>

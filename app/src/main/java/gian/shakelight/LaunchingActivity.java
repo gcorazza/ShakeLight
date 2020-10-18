@@ -1,5 +1,6 @@
 package gian.shakelight;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -66,8 +67,10 @@ public class LaunchingActivity extends ComponentActivity {
             flashlight.setLight(isChecked);
         });
 
-        if (ContextCompat.checkSelfPermission(getApplicationContext(), CAMERA) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
             //setShakeLightService(null);
+            //todo understand
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA)) {
             showInfoWhyPermissionIsNeeded();
         } else {
@@ -97,7 +100,7 @@ public class LaunchingActivity extends ComponentActivity {
     }
 
     public void unsetShakeLightService(View v) {
-        stopService(new Intent(getApplicationContext(), ShakeLightService.class));
+        stopService(new Intent(this, ShakeLightService.class));
     }
 
 

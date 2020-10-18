@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <uses-feature android:name="android.hardware.camera" />
+
     <uses-feature
         android:name="android.hardware.camera.flash"
         android:required="true" />
@@ -30,7 +32,12 @@
         <service
             android:name=".ShakeLightService"
             android:exported="true"
-            android:process=":shakeLightServiceProcess" />
+            android:process=":shakeLightServiceProcess"
+            android:foregroundServiceType="camera">
+            <intent-filter android:label="shakeLightService">
+                <action android:name="custom.SHAKELIGHTSERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

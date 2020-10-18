@@ -15,7 +15,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="unsetShakeLightService"
-        android:text="UNSET SERVICE" />
+        android:text="@string/unset_service" />
 
     <TextView
         android:id="@+id/infoField"

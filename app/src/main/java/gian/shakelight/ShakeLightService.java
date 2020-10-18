@@ -12,6 +12,7 @@ import android.hardware.SensorManager;
 import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -20,16 +21,15 @@ import org.jetbrains.annotations.NotNull;
 
 public class ShakeLightService extends Service implements SensorEventListener, Runnable {
     private long lastTick;
-    public static boolean isServiceRunning = false;
     static final int NOTIFICATION_ID = 345;
 
     private FlashlightI flashlight;
     private Thread serviceThread;
+    private final String DEBUGLOGTAG = "FlashlightService";
 
     @Override
     public void onCreate() {
-        System.out.println("onCreate " + isServiceRunning);
-        super.onCreate();
+        Log.d(DEBUGLOGTAG, "onCreate");
         serviceThread = new Thread(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
@@ -42,9 +42,8 @@ public class ShakeLightService extends Service implements SensorEventListener, R
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        Log.d(DEBUGLOGTAG, "onDestroy() called");
         serviceThread.interrupt();
-        System.out.println("onDestory " + isServiceRunning);
     }
 
     private void unregisterSensorListener() {
@@ -53,10 +52,14 @@ public class ShakeLightService extends Service implements SensorEventListener, R
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        System.out.println("onStart " + isServiceRunning);
+        Log.d(DEBUGLOGTAG, "onStartCommand() called with: intent = [" + intent + "], flags = [" + flags + "], startId = [" + startId + "]" + "ThreadId=" + Thread.currentThread());
         if (getSystemService(Context.SENSOR_SERVICE) == null) {
             stopSelf();
             return START_NOT_STICKY;
+        }
+        if (serviceThread.isAlive() || serviceThread.isInterrupted()) {
+            Log.d(DEBUGLOGTAG, "Servicethread already started");
+            return START_STICKY;
         }
         serviceThread.start();
 
@@ -143,13 +146,15 @@ public class ShakeLightService extends Service implements SensorEventListener, R
     @Override
     public void run() {
         registerSensorListener();
-        try {
-            while (true) {
-                flashlight.toggle();
+        boolean running = true;
+        while (running) {
+            flashlight.toggle();
+            try {
                 Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                System.out.println("Thread ended");
+                running = false;
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }
