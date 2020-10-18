@@ -19,18 +19,16 @@ import androidx.annotation.RequiresApi;
 
 import org.jetbrains.annotations.NotNull;
 
-public class ShakeLightService extends Service implements SensorEventListener, Runnable {
+public class ShakeLightService extends Service implements SensorEventListener {
     private long lastTick;
     static final int NOTIFICATION_ID = 345;
 
     private FlashlightI flashlight;
-    private Thread serviceThread;
     private final String DEBUGLOGTAG = "FlashlightService";
 
     @Override
     public void onCreate() {
         Log.d(DEBUGLOGTAG, "onCreate");
-        serviceThread = new Thread(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
         } else {
@@ -38,17 +36,16 @@ public class ShakeLightService extends Service implements SensorEventListener, R
         }
         Notification notification = getVersionCompatibleNotification();
         startForeground(NOTIFICATION_ID, notification);
+        registerSensorListener();
     }
 
     @Override
     public void onDestroy() {
         Log.d(DEBUGLOGTAG, "onDestroy() called");
-        serviceThread.interrupt();
+        flashlight.setLight(false);
+        unregisterSensorListener();
     }
 
-    private void unregisterSensorListener() {
-
-    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -57,13 +54,6 @@ public class ShakeLightService extends Service implements SensorEventListener, R
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (serviceThread.isAlive() || serviceThread.isInterrupted()) {
-            Log.d(DEBUGLOGTAG, "Servicethread already started");
-            return START_STICKY;
-        }
-        serviceThread.start();
-
-//        stopService(new Intent(getApplicationContext(), ShakeLightService.class));
 
         return START_STICKY;
     }
@@ -116,8 +106,8 @@ public class ShakeLightService extends Service implements SensorEventListener, R
         //System.out.println(event.values[2]);
         if (System.currentTimeMillis() - lastTick > 1000) {
             lastTick = System.currentTimeMillis();
-//            flashlight.toggle();
-//            System.out.println("lightOn = " + flashlight.isOn());
+            flashlight.toggle();
+            System.out.println("lightOn = " + flashlight.isOn());
         }
     }
 
@@ -143,20 +133,11 @@ public class ShakeLightService extends Service implements SensorEventListener, R
         return false;
     }
 
-    @Override
-    public void run() {
-        registerSensorListener();
-        boolean running = true;
-        while (running) {
-            flashlight.toggle();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                System.out.println("Thread ended");
-                running = false;
-            }
-        }
+    private void unregisterSensorListener() {
+        SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        sensorManager.unregisterListener(this);
     }
+
 }
 //https://stackoverflow.com/questions/42126979/cannot-keep-android-service-alive-after-app-is-closed
 
