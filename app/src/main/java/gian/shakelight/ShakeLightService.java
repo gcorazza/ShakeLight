@@ -19,29 +19,39 @@ import androidx.annotation.RequiresApi;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import static java.lang.Math.abs;
+import static java.lang.System.currentTimeMillis;
+
 public class ShakeLightService extends Service implements SensorEventListener {
-    private long lastTick;
+    private boolean lastRightRound;
     static final int NOTIFICATION_ID = 345;
 
     private FlashlightI flashlight;
-    private final String DEBUGLOGTAG = "FlashlightService";
+    private final String TAG = "FlashlightService";
+    private float zAngularForceThreshold = 5;
+    private ArrayList<ShakeMarker> shakeQueue = new ArrayList<ShakeMarker>();
+    private int ShakeToggleTriggerCounter = 5;
+    private long ShakeTimeSpanMs = 500;
 
     @Override
     public void onCreate() {
-        Log.d(DEBUGLOGTAG, "onCreate");
+        Log.d(TAG, "onCreate(): ThreadId=" + Thread.currentThread());
+        Notification notification = getVersionCompatibleNotification();
+        startForeground(NOTIFICATION_ID, notification);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
         } else {
             flashlight = new FlashlightSubM();
         }
-        Notification notification = getVersionCompatibleNotification();
-        startForeground(NOTIFICATION_ID, notification);
         registerSensorListener();
     }
 
     @Override
     public void onDestroy() {
-        Log.d(DEBUGLOGTAG, "onDestroy() called");
+        Log.d(TAG, "onDestroy(): ThreadId=" + Thread.currentThread());
         flashlight.setLight(false);
         unregisterSensorListener();
     }
@@ -49,7 +59,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(DEBUGLOGTAG, "onStartCommand() called with: intent = [" + intent + "], flags = [" + flags + "], startId = [" + startId + "]" + "ThreadId=" + Thread.currentThread());
+        Log.d(TAG, "onStartCommand() called with: intent = [" + intent + "], flags = [" + flags + "], startId = [" + startId + "]" + "ThreadId=" + Thread.currentThread());
         if (getSystemService(Context.SENSOR_SERVICE) == null) {
             stopSelf();
             return START_NOT_STICKY;
@@ -80,7 +90,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
         return new Notification.Builder(this)
                 .setSmallIcon(R.drawable.torch)  // the status icon
                 .setTicker(text)  // the status text
-                .setWhen(System.currentTimeMillis())  // the time stamp
+                .setWhen(currentTimeMillis())  // the time stamp
                 .setContentTitle("Shake-Light")  // the label of the entry
                 .setContentText(text)  // the contents of the entry
                 .setContentIntent(contentIntent)  // The intent to send when the entry is clicked
@@ -93,7 +103,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
         return new Notification.Builder(this)
                 .setSmallIcon(R.drawable.torch)  // the status icon
                 .setTicker(text)  // the status text
-                .setWhen(System.currentTimeMillis())  // the time stamp
+                .setWhen(currentTimeMillis())  // the time stamp
                 .setChannelId(LaunchingActivity.channelID)
                 .setContentTitle("hcujfgvkhvb")  // the label of the entry
                 .setContentText(text)  // the contents of the entry
@@ -103,11 +113,40 @@ public class ShakeLightService extends Service implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        //System.out.println(event.values[2]);
-        if (System.currentTimeMillis() - lastTick > 1000) {
-            lastTick = System.currentTimeMillis();
-            flashlight.toggle();
-            System.out.println("lightOn = " + flashlight.isOn());
+        float zAngularForce = event.values[2];
+        if (zAngularForceThreshold < abs(zAngularForce)) {
+            boolean rightRound = zAngularForce > zAngularForceThreshold;
+            if (this.lastRightRound != rightRound) {
+                shakeQueue.add(new ShakeMarker(currentTimeMillis()));
+                if (isInToggleState()) {
+                    flashlight.toggle();
+                    shakeQueue.clear();
+                }
+                Log.d(TAG, "ShakeQueue: size:" + shakeQueue.size() + " " + Arrays.toString(shakeQueue.toArray()));
+            }
+            this.lastRightRound = rightRound;
+        }
+    }
+
+    private boolean isInToggleState() {
+        checkTrimQueue();
+        return shakeQueue.size() > ShakeToggleTriggerCounter;
+    }
+
+    private void checkTrimQueue() {
+        long currentTime = currentTimeMillis();
+        for (int i = 0; i < shakeQueue.size(); i++) {
+            if (shakeQueue.get(i).timeStamp > currentTime - ShakeTimeSpanMs) {
+                trimQueue(i);
+                return;
+            }
+        }
+    }
+
+    private void trimQueue(int till) {
+        System.out.println("till = " + till);
+        if (till > 0) {
+            shakeQueue.subList(0, till).clear();
         }
     }
 
@@ -138,6 +177,18 @@ public class ShakeLightService extends Service implements SensorEventListener {
         sensorManager.unregisterListener(this);
     }
 
+    private class ShakeMarker {
+        final long timeStamp;
+
+        public ShakeMarker(long timeStamp) {
+            this.timeStamp = timeStamp;
+        }
+
+        @Override
+        public String toString() {
+            return "ms in past: " + (System.currentTimeMillis() - timeStamp);
+        }
+    }
 }
 //https://stackoverflow.com/questions/42126979/cannot-keep-android-service-alive-after-app-is-closed
 
