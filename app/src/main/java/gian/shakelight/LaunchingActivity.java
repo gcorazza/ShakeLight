@@ -69,7 +69,7 @@ public class LaunchingActivity extends ComponentActivity {
 
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
-            //setShakeLightService(null);
+//            setShakeLightService(null);
             //todo understand
         } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA)) {
             showInfoWhyPermissionIsNeeded();
@@ -123,6 +123,20 @@ public class LaunchingActivity extends ComponentActivity {
         nm.createNotificationChannel(mChannel);
     }
 
+    // todo maybe I need later
+    /*
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    */
 }
 //backlog:
 

@@ -26,27 +26,29 @@ import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;
 
 public class ShakeLightService extends Service implements SensorEventListener {
-    private boolean lastRightRound;
-    static final int NOTIFICATION_ID = 345;
-
-    private FlashlightI flashlight;
+    private static final int NOTIFICATION_ID = 345;
     private final String TAG = "FlashlightService";
-    private float zAngularForceThreshold = 5;
+
+    private boolean lastRightRound;
+    private FlashlightI flashlight;
     private ArrayList<ShakeMarker> shakeQueue = new ArrayList<ShakeMarker>();
+    private SensorManager sensorManager;
+
+    // Settings
+    private float zAngularForceThreshold = 5;
     private int ShakeToggleTriggerCounter = 5;
     private long ShakeTimeSpanMs = 500;
 
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate(): ThreadId=" + Thread.currentThread());
-        Notification notification = getVersionCompatibleNotification();
-        startForeground(NOTIFICATION_ID, notification);
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        startForeground(NOTIFICATION_ID, getVersionCompatibleNotification());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
         } else {
             flashlight = new FlashlightSubM();
         }
-        registerSensorListener();
     }
 
     @Override
@@ -60,6 +62,8 @@ public class ShakeLightService extends Service implements SensorEventListener {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand() called with: intent = [" + intent + "], flags = [" + flags + "], startId = [" + startId + "]" + "ThreadId=" + Thread.currentThread());
+        registerSensorListener();
+
         if (getSystemService(Context.SENSOR_SERVICE) == null) {
             stopSelf();
             return START_NOT_STICKY;
@@ -91,7 +95,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
                 .setSmallIcon(R.drawable.torch)  // the status icon
                 .setTicker(text)  // the status text
                 .setWhen(currentTimeMillis())  // the time stamp
-                .setContentTitle("Shake-Light")  // the label of the entry
+                .setContentTitle(getString(R.string.app_name))  // the label of the entry
                 .setContentText(text)  // the contents of the entry
                 .setContentIntent(contentIntent)  // The intent to send when the entry is clicked
                 .build();
@@ -105,7 +109,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
                 .setTicker(text)  // the status text
                 .setWhen(currentTimeMillis())  // the time stamp
                 .setChannelId(LaunchingActivity.channelID)
-                .setContentTitle("hcujfgvkhvb")  // the label of the entry
+                .setContentTitle(getString(R.string.app_name))  // the label of the entry
                 .setContentText(text)  // the contents of the entry
                 .setContentIntent(contentIntent)  // The intent to send when the entry is clicked
                 .build();
@@ -144,7 +148,6 @@ public class ShakeLightService extends Service implements SensorEventListener {
     }
 
     private void trimQueue(int till) {
-        System.out.println("till = " + till);
         if (till > 0) {
             shakeQueue.subList(0, till).clear();
         }
@@ -163,7 +166,6 @@ public class ShakeLightService extends Service implements SensorEventListener {
     }
 
     private boolean registerSensorListener() {
-        SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager == null) {
             return true;
         }

@@ -7,4 +7,5 @@
     <string name="channel_name">ShakeLightChannel</string>
     <string name="channel_description">Its a nice Channel. Really nice</string>
     <string name="unset_service">UNSET SERVICE</string>
+    <string name="service_description">The service to toggle the light with a shake</string>
 </resources>

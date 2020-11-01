@@ -33,6 +33,7 @@
             android:name=".ShakeLightService"
             android:exported="true"
             android:process=":shakeLightServiceProcess"
+            android:description="@string/service_description"
             android:foregroundServiceType="camera">
             <intent-filter android:label="shakeLightService">
                 <action android:name="custom.SHAKELIGHTSERVICE" />
