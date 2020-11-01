@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.ComponentActivity;
@@ -26,15 +27,14 @@ import static android.Manifest.permission.CAMERA;
 public class LaunchingActivity extends ComponentActivity {
 
     public static final String channelID = "FlashLightChannelID";
-
-
+    private ImageButton setServiceBtn;
+    private ImageView shakeTut;
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
             this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
                     setShakeLightService();
                 }
             });
-    private ImageButton setServiceBtn;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,6 +47,7 @@ public class LaunchingActivity extends ComponentActivity {
         setContentView(R.layout.activity_main);
         TextView infoField = findViewById(R.id.infoField);
         setServiceBtn = findViewById(R.id.setServiceBtn);
+        shakeTut = findViewById(R.id.shakeTut);
 
         if (!hasCamera()) {
             infoField.setText(R.string.infotextAppWontWork);
@@ -54,7 +55,36 @@ public class LaunchingActivity extends ComponentActivity {
             return;
         }
 
+        setServiceBtnImgTo(isShakeLightServiceRunning());
+
         setServiceBtn.setOnClickListener(view -> toggleServiceState());
+
+        new Thread(() -> {
+            int animationSpeed = 200;
+            final int[] frame = {0};
+            int[] animation = {
+                    R.drawable.shake_tut1,
+                    R.drawable.shake_tut2,
+                    R.drawable.shake_tut1,
+                    R.drawable.shake_tut2,
+                    R.drawable.shake_tut0,
+                    R.drawable.shake_tut0,
+                    R.drawable.shake_tut0,
+                    R.drawable.shake_tut0,
+                    R.drawable.shake_tut0,
+            };
+            while (true) {
+                if (frame[0] == animation.length) {
+                    frame[0] = 0;
+                }
+                runOnUiThread(() -> shakeTut.setImageResource(animation[frame[0]++]));
+                try {
+                    Thread.sleep(animationSpeed);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }).start();
 
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -80,22 +110,26 @@ public class LaunchingActivity extends ComponentActivity {
     private void updatePwrBtnUIOnChange(boolean oldStateService) {
         new Thread(() -> {
             setServiceBtn.setImageResource(R.drawable.button_waiting);
-            boolean isChecking = true;
-            while (isChecking) {
+            while (true) {
                 if (isShakeLightServiceRunning() != oldStateService) {
-                    if (oldStateService)
-                        setServiceBtn.setImageResource(R.drawable.button_offline);
-                    else
-                        setServiceBtn.setImageResource(R.drawable.button_online);
-                    isChecking = false;
+                    setServiceBtnImgTo(!oldStateService);
+                    return;
                 }
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e) {
-                    isChecking = false;
+                    return;
                 }
             }
         }).start();
+    }
+
+    private void setServiceBtnImgTo(boolean online) {
+        if (online) {
+            runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_online));
+        } else {
+            runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_offline));
+        }
     }
 
     private void showInfoWhyPermissionIsNeeded() {
