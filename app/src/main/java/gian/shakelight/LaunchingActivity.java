@@ -1,18 +1,16 @@
 package gian.shakelight;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.Switch;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.activity.ComponentActivity;
@@ -27,25 +25,20 @@ import static android.Manifest.permission.CAMERA;
 
 public class LaunchingActivity extends ComponentActivity {
 
-    private FlashlightI flashlight;
     public static final String channelID = "FlashLightChannelID";
 
 
     private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
             this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
-                    setShakeLightService(null);
+                    setShakeLightService();
                 }
             });
+    private ImageButton setServiceBtn;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
-        } else {
-            flashlight = new FlashlightSubM();
-        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             createchannel();
@@ -53,19 +46,15 @@ public class LaunchingActivity extends ComponentActivity {
 
         setContentView(R.layout.activity_main);
         TextView infoField = findViewById(R.id.infoField);
-        Button setServiceBtn = findViewById(R.id.setServiceBtn);
-        Switch litghSwitch = findViewById(R.id.lightSwitch);
+        setServiceBtn = findViewById(R.id.setServiceBtn);
 
         if (!hasCamera()) {
             infoField.setText(R.string.infotextAppWontWork);
             setServiceBtn.setEnabled(false);
-            litghSwitch.setEnabled(false);
             return;
         }
 
-        litghSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            flashlight.setLight(isChecked);
-        });
+        setServiceBtn.setOnClickListener(view -> toggleServiceState());
 
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -76,6 +65,37 @@ public class LaunchingActivity extends ComponentActivity {
         } else {
             requestCameraPermissionLauncher.launch(CAMERA);
         }
+    }
+
+    private void toggleServiceState() {
+        boolean shakeLightServiceRunning = isShakeLightServiceRunning();
+        updatePwrBtnUIOnChange(shakeLightServiceRunning);
+        if (shakeLightServiceRunning) {
+            unsetShakeLightService();
+        } else {
+            setShakeLightService();
+        }
+    }
+
+    private void updatePwrBtnUIOnChange(boolean oldStateService) {
+        new Thread(() -> {
+            setServiceBtn.setImageResource(R.drawable.button_waiting);
+            boolean isChecking = true;
+            while (isChecking) {
+                if (isShakeLightServiceRunning() != oldStateService) {
+                    if (oldStateService)
+                        setServiceBtn.setImageResource(R.drawable.button_offline);
+                    else
+                        setServiceBtn.setImageResource(R.drawable.button_online);
+                    isChecking = false;
+                }
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    isChecking = false;
+                }
+            }
+        }).start();
     }
 
     private void showInfoWhyPermissionIsNeeded() {
@@ -91,7 +111,7 @@ public class LaunchingActivity extends ComponentActivity {
         return getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
     }
 
-    public void setShakeLightService(View v) {
+    public void setShakeLightService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(new Intent(this, ShakeLightService.class));
         } else {
@@ -99,7 +119,7 @@ public class LaunchingActivity extends ComponentActivity {
         }
     }
 
-    public void unsetShakeLightService(View v) {
+    public void unsetShakeLightService() {
         stopService(new Intent(this, ShakeLightService.class));
     }
 
@@ -123,20 +143,16 @@ public class LaunchingActivity extends ComponentActivity {
         nm.createNotificationChannel(mChannel);
     }
 
-    // todo maybe I need later
-    /*
-
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
+    private boolean isShakeLightServiceRunning() {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
+            if (ShakeLightService.class.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
         return false;
     }
 
-    */
 }
 //backlog:
 
