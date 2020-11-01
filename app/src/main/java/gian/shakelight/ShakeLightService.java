@@ -12,6 +12,8 @@ import android.hardware.SensorManager;
 import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -38,11 +40,30 @@ public class ShakeLightService extends Service implements SensorEventListener {
     private float zAngularForceThreshold = 5;
     private int ShakeToggleTriggerCounter = 5;
     private long ShakeTimeSpanMs = 500;
+    private Vibrator vibrator;
+    private static VibrationEffect vibrationEffect = createVibrationEffect();
+    private static VibrationEffect vibrationEffectReverse = vibrationEffect; //todo make reverse effect
+
+    private static VibrationEffect createVibrationEffect() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            float effectLengthMs = 500;
+            int resolution = 3;
+            long[] timings = new long[resolution];
+            int[] amps = new int[resolution];
+            for (int i = 0; i < resolution; i++) {
+                timings[i] = (long) (effectLengthMs / resolution);
+                amps[i] = (int) (((float) i / resolution) * 255);
+            }
+            return VibrationEffect.createWaveform(timings, amps, -1);
+        }
+        return null;
+    }
 
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate(): ThreadId=" + Thread.currentThread());
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         startForeground(NOTIFICATION_ID, getVersionCompatibleNotification());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             flashlight = new Flashlight((CameraManager) getSystemService(Context.CAMERA_SERVICE));
@@ -124,11 +145,26 @@ public class ShakeLightService extends Service implements SensorEventListener {
                 shakeQueue.add(new ShakeMarker(currentTimeMillis()));
                 if (isInToggleState()) {
                     flashlight.toggle();
+                    vibrate(flashlight.isOn());
                     shakeQueue.clear();
                 }
                 Log.d(TAG, "ShakeQueue: size:" + shakeQueue.size() + " " + Arrays.toString(shakeQueue.toArray()));
             }
             this.lastRightRound = rightRound;
+        }
+    }
+
+    private void vibrate(boolean on) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (on)
+                vibrator.vibrate(vibrationEffect);
+            else
+                vibrator.vibrate(vibrationEffectReverse);
+        } else {
+            if (on)
+                vibrator.vibrate(500);
+            else
+                vibrator.vibrate(300);
         }
     }
 
