@@ -15,7 +15,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.ComponentActivity;
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -23,25 +22,22 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import static android.Manifest.permission.CAMERA;
+import static gian.shakelight.ServiceButtonnState.OFFLINE;
+import static gian.shakelight.ServiceButtonnState.ONLINE;
+import static gian.shakelight.ServiceButtonnState.WAITING;
 
 public class LaunchingActivity extends ComponentActivity {
 
     public static final String channelID = "FlashLightChannelID";
     private ImageButton setServiceBtn;
     private ImageView shakeTut;
-    private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
-            this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    setShakeLightService();
-                }
-            });
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createchannel();
+            createChannel();
         }
 
         setContentView(R.layout.activity_main);
@@ -57,7 +53,7 @@ public class LaunchingActivity extends ComponentActivity {
 
         setServiceBtnImgTo(isShakeLightServiceRunning());
 
-        setServiceBtn.setOnClickListener(view -> toggleServiceState());
+        setServiceBtn.setOnClickListener(view -> updateServiceStateAndUI(!isShakeLightServiceRunning()));
 
         new Thread(() -> {
             int animationSpeed = 200;
@@ -88,31 +84,42 @@ public class LaunchingActivity extends ComponentActivity {
 
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
-//            setShakeLightService(null);
-            //todo understand
-        } else if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA)) {
-            showInfoWhyPermissionIsNeeded();
+            if (!isShakeLightServiceRunning()) {
+                updateServiceStateAndUI(true);
+            }
         } else {
-            requestCameraPermissionLauncher.launch(CAMERA);
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, CAMERA)) {
+                showInfoWhyPermissionIsNeeded();
+            }
+            this.registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    updateServiceStateAndUI(true);
+                }
+            }).launch(CAMERA);
         }
     }
 
-    private void toggleServiceState() {
+    private void updateServiceStateAndUI(boolean on) {
         boolean shakeLightServiceRunning = isShakeLightServiceRunning();
-        updatePwrBtnUIOnChange(shakeLightServiceRunning);
-        if (shakeLightServiceRunning) {
-            unsetShakeLightService();
-        } else {
+        if (shakeLightServiceRunning == on) {
+            setServiceBtnImgTo(on);
+            return;
+        }
+        updatePwrBtnUIOnChange(!on);
+        if (on) {
             setShakeLightService();
+        } else {
+            unsetShakeLightService();
         }
     }
 
     private void updatePwrBtnUIOnChange(boolean oldStateService) {
         new Thread(() -> {
-            setServiceBtn.setImageResource(R.drawable.button_waiting);
+            setServiceBtnImgTo(WAITING);
             while (true) {
                 if (isShakeLightServiceRunning() != oldStateService) {
-                    setServiceBtnImgTo(!oldStateService);
+                    boolean on = !oldStateService;
+                    setServiceBtnImgTo(on);
                     return;
                 }
                 try {
@@ -124,16 +131,25 @@ public class LaunchingActivity extends ComponentActivity {
         }).start();
     }
 
-    private void setServiceBtnImgTo(boolean online) {
-        if (online) {
-            runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_online));
-        } else {
-            runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_offline));
+    private void setServiceBtnImgTo(boolean on) {
+        setServiceBtnImgTo(on ? ONLINE : OFFLINE);
+    }
+
+    private void setServiceBtnImgTo(ServiceButtonnState state) {
+        switch (state) {
+            case ONLINE:
+                runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_online));
+                return;
+            case OFFLINE:
+                runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_offline));
+                return;
+            case WAITING:
+                runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_waiting));
         }
     }
 
     private void showInfoWhyPermissionIsNeeded() {
-        AlertDialog alertDialog = new AlertDialog.Builder(getApplicationContext()).create();
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle("Permission Info");
         alertDialog.setMessage("This App needs Permission to use the Camera, because it needs access to the Flashlight");
         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
@@ -162,17 +178,13 @@ public class LaunchingActivity extends ComponentActivity {
      * for API 26+ create notification channels
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private void createchannel() {
+    private void createChannel() {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         NotificationChannel mChannel = new NotificationChannel(channelID,
                 getString(R.string.channel_name),  //name of the channel
                 NotificationManager.IMPORTANCE_LOW);   //importance level
-        //important level: default is is high on the phone.  high is urgent on the phone.  low is medium, so none is low?
-        // Configure the notification channel.
         mChannel.setDescription(getString(R.string.channel_description));
-        mChannel.enableLights(true);
-        // Sets the notification light color for notifications posted to this channel, if the device supports this feature.
         mChannel.setShowBadge(true);
         nm.createNotificationChannel(mChannel);
     }

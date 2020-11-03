@@ -113,7 +113,6 @@ public class ShakeLightService extends Service implements SensorEventListener {
 
     private Notification getNotificationSubO(CharSequence text, PendingIntent contentIntent) {
         return new Notification.Builder(this)
-                .setSmallIcon(R.drawable.torch)  // the status icon
                 .setTicker(text)  // the status text
                 .setWhen(currentTimeMillis())  // the time stamp
                 .setContentTitle(getString(R.string.app_name))  // the label of the entry
@@ -126,7 +125,6 @@ public class ShakeLightService extends Service implements SensorEventListener {
     @NotNull
     private Notification getNotificationSuperO(CharSequence text, PendingIntent contentIntent) {
         return new Notification.Builder(this)
-                .setSmallIcon(R.drawable.torch)  // the status icon
                 .setTicker(text)  // the status text
                 .setWhen(currentTimeMillis())  // the time stamp
                 .setChannelId(LaunchingActivity.channelID)
@@ -139,13 +137,18 @@ public class ShakeLightService extends Service implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent event) {
         float zAngularForce = event.values[2];
+        long sTime = currentTimeMillis();
         if (zAngularForceThreshold < abs(zAngularForce)) {
             boolean rightRound = zAngularForce > zAngularForceThreshold;
             if (this.lastRightRound != rightRound) {
                 shakeQueue.add(new ShakeMarker(currentTimeMillis()));
+                Log.d("Profiler", "isInToggle: " + (currentTimeMillis() - sTime));
                 if (isInToggleState()) {
+                    Log.d("Profiler", "flashlight.toggle: " + (currentTimeMillis() - sTime));
                     flashlight.toggle();
+                    Log.d("Profiler", "vibrate(flashlight.isOn()): " + (currentTimeMillis() - sTime));
                     vibrate(flashlight.isOn());
+                    Log.d("Profiler", "shakeQueue.clear(): " + (currentTimeMillis() - sTime));
                     shakeQueue.clear();
                 }
                 Log.d(TAG, "ShakeQueue: size:" + shakeQueue.size() + " " + Arrays.toString(shakeQueue.toArray()));
@@ -164,7 +167,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
             if (on)
                 vibrator.vibrate(500);
             else
-                vibrator.vibrate(300);
+                vibrator.vibrate(100);
         }
     }
 
@@ -224,7 +227,7 @@ public class ShakeLightService extends Service implements SensorEventListener {
 
         @Override
         public String toString() {
-            return "ms in past: " + (System.currentTimeMillis() - timeStamp);
+            return "ms in past: " + (currentTimeMillis() - timeStamp);
         }
     }
 }
