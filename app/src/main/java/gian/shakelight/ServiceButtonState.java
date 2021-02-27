@@ -1,5 +1,5 @@
 package gian.shakelight;
 
-enum ServiceButtonnState {
+enum ServiceButtonState {
     ONLINE, OFFLINE, WAITING
 }

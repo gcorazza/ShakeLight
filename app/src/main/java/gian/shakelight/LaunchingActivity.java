@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -22,9 +23,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import static android.Manifest.permission.CAMERA;
-import static gian.shakelight.ServiceButtonnState.OFFLINE;
-import static gian.shakelight.ServiceButtonnState.ONLINE;
-import static gian.shakelight.ServiceButtonnState.WAITING;
+import static gian.shakelight.ServiceButtonState.OFFLINE;
+import static gian.shakelight.ServiceButtonState.ONLINE;
+import static gian.shakelight.ServiceButtonState.WAITING;
 
 public class LaunchingActivity extends ComponentActivity {
 
@@ -107,7 +108,7 @@ public class LaunchingActivity extends ComponentActivity {
         }
         updatePwrBtnUIOnChange(!on);
         if (on) {
-            setShakeLightService();
+            setShakeLightService(this);
         } else {
             unsetShakeLightService();
         }
@@ -135,7 +136,7 @@ public class LaunchingActivity extends ComponentActivity {
         setServiceBtnImgTo(on ? ONLINE : OFFLINE);
     }
 
-    private void setServiceBtnImgTo(ServiceButtonnState state) {
+    private void setServiceBtnImgTo(ServiceButtonState state) {
         switch (state) {
             case ONLINE:
                 runOnUiThread(() -> setServiceBtn.setImageResource(R.drawable.button_online));
@@ -161,11 +162,11 @@ public class LaunchingActivity extends ComponentActivity {
         return getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
     }
 
-    public void setShakeLightService() {
+    public static void setShakeLightService(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(new Intent(this, ShakeLightService.class));
+            context.startForegroundService(new Intent(context, ShakeLightService.class));
         } else {
-            startService(new Intent(this, ShakeLightService.class));
+            context.startService(new Intent(context, ShakeLightService.class));
         }
     }
 
@@ -191,14 +192,18 @@ public class LaunchingActivity extends ComponentActivity {
 
     private boolean isShakeLightServiceRunning() {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (ShakeLightService.class.getName().equals(service.service.getClassName())) {
+        for (ActivityManager.RunningAppProcessInfo service : manager.getRunningAppProcesses()) {
+            if ("gian.shakelight:shakeLightServiceProcess".equals(service.processName)) {
                 return true;
             }
         }
+        String manufacturer = Build.MANUFACTURER;
         return false;
     }
 
+    public void testMethod(View view) {
+        new Thread(() -> isShakeLightServiceRunning()).start();
+    }
 }
 //backlog:
 

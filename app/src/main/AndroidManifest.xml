@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="Manifest.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature android:name="android.hardware.camera" />
 
@@ -21,6 +22,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
+        android:installLocation="internalOnly"
         android:screenOrientation="portrait">
 
         <activity
@@ -35,6 +37,7 @@
         <service
             android:name=".ShakeLightService"
             android:exported="true"
+            android:enabled="true"
             android:process=":shakeLightServiceProcess"
             android:description="@string/service_description"
             android:foregroundServiceType="camera">
@@ -42,6 +45,14 @@
                 <action android:name="custom.SHAKELIGHTSERVICE" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".StartMyServiceAtBootReceiver"
+            android:label="StartMyServiceAtBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
